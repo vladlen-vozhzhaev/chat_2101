@@ -17,9 +17,11 @@ public class Client {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 DataInputStream in = new DataInputStream(socket.getInputStream());
                 Scanner scanner = new Scanner(System.in);
-                String message = scanner.nextLine();
-                out.writeUTF(message);
-                System.out.println(in.readUTF());
+                while (true){
+                    String message = scanner.nextLine();
+                    out.writeUTF(message);
+                    System.out.println(in.readUTF());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

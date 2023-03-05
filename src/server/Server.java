@@ -16,10 +16,11 @@ public class Server {
             System.out.println("Клиент подключился");
             DataInputStream in = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            String clientMessage = in.readUTF();
-            System.out.println(clientMessage);
-            out.writeUTF(clientMessage.toUpperCase()); // Сервер отправляет сообщение
-            System.out.println("Сервер отключен");
+            while (true){
+                String clientMessage = in.readUTF();
+                System.out.println(clientMessage);
+                out.writeUTF(clientMessage.toUpperCase()); // Сервер отправляет сообщение
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
