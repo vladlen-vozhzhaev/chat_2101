@@ -35,6 +35,7 @@ public class Server {
                             }
                         }catch (IOException e){
                             System.out.println("Потеряно соединение с клиентом");
+                            sockets.remove(socket);
                         }
                     }
                 });
