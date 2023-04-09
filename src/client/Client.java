@@ -12,7 +12,7 @@ public class Client {
         {
             try {
                 // Подключаемся к серверу
-                socket = new Socket("62.217.182.193", 9178);
+                socket = new Socket("127.0.0.1", 9178);
                 // Поток вывода (для отправки сообщения серверу)
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 DataInputStream in = new DataInputStream(socket.getInputStream());
