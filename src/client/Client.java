@@ -17,8 +17,6 @@ public class Client {
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 DataInputStream in = new DataInputStream(socket.getInputStream());
                 Scanner scanner = new Scanner(System.in);
-                System.out.println("Введите имя:");
-                String name = scanner.nextLine();
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -34,7 +32,7 @@ public class Client {
                 thread.start();
                 while (true){
                     String message = scanner.nextLine();
-                    out.writeUTF(name+": "+message);
+                    out.writeUTF(message);
                 }
             } catch (IOException e) {
                 e.printStackTrace();

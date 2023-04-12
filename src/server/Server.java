@@ -5,9 +5,16 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 public class Server {
+    private static final  String URL_DB = "jdbc:mysql://127.0.0.1:3306/android_chat_2101";
+    private static final String LOGIN_DB = "root";
+    private static final String PASS_DB = "";
     public static void main(String[] args) {
         ArrayList<Socket> sockets = new ArrayList<>();
         try {
@@ -32,7 +39,11 @@ public class Server {
                             String login = in.readUTF();
                             out.writeUTF("Введите пароль: ");
                             String pass = in.readUTF();
-
+                            Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                            Statement statement = connection.createStatement();
+                            statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) " +
+                                    "VALUES ('"+name+"','"+login+"','"+pass+"')");
+                            statement.close();
                             while (true){
                                 String clientMessage = in.readUTF();
                                 System.out.println(clientMessage);
@@ -45,6 +56,8 @@ public class Server {
                         }catch (IOException e){
                             System.out.println("Потеряно соединение с клиентом");
                             sockets.remove(socket);
+                        }catch (SQLException e){
+                            e.printStackTrace();
                         }
                     }
                 });
