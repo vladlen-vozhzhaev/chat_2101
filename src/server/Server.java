@@ -5,10 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 
 public class Server {
@@ -33,17 +30,44 @@ public class Server {
                         try {
                             DataInputStream in = new DataInputStream(socket.getInputStream());
                             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                            out.writeUTF("Введите имя: ");
-                            String name = in.readUTF();
-                            out.writeUTF("Введите логин: ");
-                            String login = in.readUTF();
-                            out.writeUTF("Введите пароль: ");
-                            String pass = in.readUTF();
-                            Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
-                            Statement statement = connection.createStatement();
-                            statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) " +
-                                    "VALUES ('"+name+"','"+login+"','"+pass+"')");
-                            statement.close();
+                            String name;
+                            while (true){
+                                out.writeUTF("Для регистрации аккаунта введите /reg, для авторизации /login");
+                                String command = in.readUTF();
+                                if(command.equals("/reg")){
+                                    out.writeUTF("Введите имя: ");
+                                    name = in.readUTF();
+                                    out.writeUTF("Введите логин: ");
+                                    String login = in.readUTF();
+                                    out.writeUTF("Введите пароль: ");
+                                    String pass = in.readUTF();
+                                    Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                                    Statement statement = connection.createStatement();
+                                    statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) " +
+                                            "VALUES ('"+name+"','"+login+"','"+pass+"')");
+                                    statement.close();
+                                    break;
+                                }else if (command.equals("/login")){
+                                    out.writeUTF("Введите логин: ");
+                                    String login = in.readUTF();
+                                    out.writeUTF("Введите пароль: ");
+                                    String pass = in.readUTF();
+                                    Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                                    Statement statement = connection.createStatement();
+                                    ResultSet resultSet =  statement.executeQuery("SELECT * FROM `users` WHERE login='"+login+"' AND pass='"+pass+"'");
+                                    if(resultSet.next()){
+                                        name = resultSet.getString("name");
+                                        out.writeUTF("Успешный вход в систему, ваше имя "+name);
+                                        break;
+                                    }else{
+                                        out.writeUTF("Неправильный логин или пароль");
+                                    }
+                                }else{
+                                    out.writeUTF("Неверная команда");
+                                }
+                            }
+
+
                             while (true){
                                 String clientMessage = in.readUTF();
                                 System.out.println(clientMessage);
