@@ -23,53 +23,27 @@ public class Server {
                 // Ждём клиента и сохраняем его в socket
                 Socket socket = serverSocket.accept();
                 System.out.println("Клиент подключился");
+                User user = new User(socket);
                 sockets.add(socket); // добавляем подключившегося клиента в список
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            DataInputStream in = new DataInputStream(socket.getInputStream());
-                            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                            String name;
                             while (true){
-                                out.writeUTF("Для регистрации аккаунта введите /reg, для авторизации /login");
-                                String command = in.readUTF();
+                                user.getOut().writeUTF("Для регистрации аккаунта введите /reg, для авторизации /login");
+                                String command = user.getIn().readUTF();
                                 if(command.equals("/reg")){
-                                    out.writeUTF("Введите имя: ");
-                                    name = in.readUTF();
-                                    out.writeUTF("Введите логин: ");
-                                    String login = in.readUTF();
-                                    out.writeUTF("Введите пароль: ");
-                                    String pass = in.readUTF();
-                                    Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
-                                    Statement statement = connection.createStatement();
-                                    statement.executeUpdate("INSERT INTO `users`(`name`, `login`, `pass`) " +
-                                            "VALUES ('"+name+"','"+login+"','"+pass+"')");
-                                    statement.close();
-                                    break;
+                                    if(user.reg(URL_DB, LOGIN_DB, PASS_DB)) break;
                                 }else if (command.equals("/login")){
-                                    out.writeUTF("Введите логин: ");
-                                    String login = in.readUTF();
-                                    out.writeUTF("Введите пароль: ");
-                                    String pass = in.readUTF();
-                                    Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
-                                    Statement statement = connection.createStatement();
-                                    ResultSet resultSet =  statement.executeQuery("SELECT * FROM `users` WHERE login='"+login+"' AND pass='"+pass+"'");
-                                    if(resultSet.next()){
-                                        name = resultSet.getString("name");
-                                        out.writeUTF("Успешный вход в систему, ваше имя "+name);
-                                        break;
-                                    }else{
-                                        out.writeUTF("Неправильный логин или пароль");
-                                    }
+                                    if(user.login(URL_DB, LOGIN_DB, PASS_DB)) break;
                                 }else{
-                                    out.writeUTF("Неверная команда");
+                                    user.getOut().writeUTF("Неверная команда");
                                 }
                             }
 
 
                             while (true){
-                                String clientMessage = in.readUTF();
+                                String clientMessage = user.getIn().readUTF();
                                 System.out.println(clientMessage);
                                 for (int i = 0; i < sockets.size(); i++) {
                                     Socket socket1 = sockets.get(i);
