@@ -1,5 +1,9 @@
 package server;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,18 +34,20 @@ public class Server {
                     public void run() {
                         try {
                             while (true){
-                                user.getOut().writeUTF("Для регистрации аккаунта введите /reg, для авторизации /login");
-                                String command = user.getIn().readUTF();
+                                JSONParser jsonParser = new JSONParser();
+                                JSONObject jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
+                                String login = jsonObject.get("login").toString();
+                                String pass = jsonObject.get("pass").toString();
+                                if(user.login(URL_DB, LOGIN_DB, PASS_DB, login, pass)) break;
+                                /*String command = "";
                                 if(command.equals("/reg")){
                                     if(user.reg(URL_DB, LOGIN_DB, PASS_DB)) break;
                                 }else if (command.equals("/login")){
                                     if(user.login(URL_DB, LOGIN_DB, PASS_DB)) break;
                                 }else{
                                     user.getOut().writeUTF("Неверная команда");
-                                }
+                                }*/
                             }
-
-
                             while (true){
                                 String clientMessage = user.getIn().readUTF();
                                 System.out.println(clientMessage);
@@ -56,6 +62,8 @@ public class Server {
                             sockets.remove(socket);
                         }catch (SQLException e){
                             e.printStackTrace();
+                        } catch (ParseException e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 });
