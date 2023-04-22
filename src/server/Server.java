@@ -18,6 +18,7 @@ public class Server {
     private static final String PASS_DB = "";
     public static void main(String[] args) {
         ArrayList<Socket> sockets = new ArrayList<>();
+        ArrayList<User> users = new ArrayList<>();
         try {
             ServerSocket serverSocket = new ServerSocket(9178);
             System.out.println("Сервер запущен");
@@ -28,38 +29,44 @@ public class Server {
                 Socket socket = serverSocket.accept();
                 System.out.println("Клиент подключился");
                 User user = new User(socket);
-                sockets.add(socket); // добавляем подключившегося клиента в список
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
+                            JSONParser jsonParser = new JSONParser();
+                            JSONObject jsonObject;
                             while (true){
-                                JSONParser jsonParser = new JSONParser();
-                                JSONObject jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
+                                jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
+                                String action = jsonObject.get("action").toString();
                                 String login = jsonObject.get("login").toString();
                                 String pass = jsonObject.get("pass").toString();
-                                if(user.login(URL_DB, LOGIN_DB, PASS_DB, login, pass)) break;
-                                /*String command = "";
-                                if(command.equals("/reg")){
-                                    if(user.reg(URL_DB, LOGIN_DB, PASS_DB)) break;
-                                }else if (command.equals("/login")){
-                                    if(user.login(URL_DB, LOGIN_DB, PASS_DB)) break;
-                                }else{
-                                    user.getOut().writeUTF("Неверная команда");
-                                }*/
-                            }
-                            while (true){
-                                String clientMessage = user.getIn().readUTF();
-                                System.out.println(clientMessage);
-                                for (int i = 0; i < sockets.size(); i++) {
-                                    Socket socket1 = sockets.get(i);
-                                    DataOutputStream out1 = new DataOutputStream(socket1.getOutputStream());
-                                    out1.writeUTF(clientMessage.toUpperCase()); // Сервер отправляет сообщение
+                                if(action.equals("reg")){
+                                    String name = jsonObject.get("name").toString();
+                                    if(user.reg(URL_DB, LOGIN_DB, PASS_DB, name, login, pass))  break;
+                                } else if (action.equals("login")) {
+                                    if(user.login(URL_DB, LOGIN_DB, PASS_DB, login, pass)) break;
                                 }
+                            }
+                            users.add(user);
+                            // Общение с клиентами
+                            while (true){
+                                jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
+                                boolean publicMsg = (boolean) jsonObject.get("public");
+                                if(publicMsg){// Рассылаем всем
+                                    String clientMessage = (String) jsonObject.get("msg");
+                                    System.out.println(clientMessage);
+                                    for (int i = 0; i < users.size(); i++) {
+                                        users.get(i).getOut().writeUTF(clientMessage.toUpperCase()); // Сервер отправляет сообщение
+                                    }
+                                }else{
+                                    // Отправляем личное сообщение
+                                }
+
+
                             }
                         }catch (IOException e){
                             System.out.println("Потеряно соединение с клиентом");
-                            sockets.remove(socket);
+                            users.remove(user);
                         }catch (SQLException e){
                             e.printStackTrace();
                         } catch (ParseException e) {

@@ -22,22 +22,46 @@ public class Client {
                 /*
                  * {} - пустой JSON
                  * {
+                 *   "action": "login"
                  *   "login":"ivan@mail.ru",
                  *   "pass":"123"
                  * }
                  * */
+                // Данный цикл для авторизации или регистрации (не для общения)
                 while (true){
-                    System.out.println("Введите логин: ");
-                    String login = scanner.nextLine();
-                    System.out.println("Введите пароль: ");
-                    String pass = scanner.nextLine();
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("login", login);
-                    jsonObject.put("pass", pass);
-                    out.writeUTF(jsonObject.toJSONString());
-                    String response = in.readUTF();
-                    if(response.equals("success")) break;
-                    System.out.println("Неправильный логин или пароль");
+                    System.out.println("Для регистрации введите /reg, для авторизации введите /login");
+                    String command = scanner.nextLine(); // Ждём от пользователя команду
+                    JSONObject jsonObject = new JSONObject(); // Создаём пустой JSON
+                    if(command.equals("/reg")){ // Если пользователь ввёл /reg
+                        System.out.println("Введите имя: ");
+                        String name = scanner.nextLine();
+                        System.out.println("Введите логин: ");
+                        String login = scanner.nextLine();
+                        System.out.println("Введите пароль: ");
+                        String pass = scanner.nextLine();
+                        jsonObject.put("action", "reg");
+                        jsonObject.put("name", name);
+                        jsonObject.put("login", login);
+                        jsonObject.put("pass", pass);
+                        out.writeUTF(jsonObject.toJSONString()); // Отправляем на сервер наш JSON
+                        String response = in.readUTF(); // Читаем ответ
+                        if(response.equals("success")) break; // Если ответ success, то прерываем цикл
+                    } else if (command.equals("/login")) { // Если пользователь ввёл /login
+                        System.out.println("Введите логин: ");
+                        String login = scanner.nextLine();
+                        System.out.println("Введите пароль: ");
+                        String pass = scanner.nextLine();
+                        jsonObject.put("action", "login");
+                        jsonObject.put("login", login);
+                        jsonObject.put("pass", pass);
+                        out.writeUTF(jsonObject.toJSONString());// Отправляем на сервер наш JSON
+                        String response = in.readUTF();// Читаем ответ
+                        if(response.equals("success")) break;// Если ответ success, то прерываем цикл
+                        else System.out.println("Неправильный логин или пароль");
+                    }else{
+                        System.out.println("Недопустимая команда");
+                    }
+
                 }
                 Thread thread = new Thread(new Runnable() {
                     @Override
@@ -54,8 +78,20 @@ public class Client {
                 thread.start();
 
                 while (true){
+                    JSONObject jsonObject = new JSONObject(); // Создаём пустой JSON
                     String message = scanner.nextLine();
-                    out.writeUTF(message);
+                    if(message.contains("/m")){
+                        jsonObject.put("public", false);
+                        // /m 2 hello my friend
+                        String userId = message.split(" ")[1];
+                        String msg = message.substring(3+userId.length());
+                        jsonObject.put("msg", msg);
+                        jsonObject.put("id", userId);
+                    }else{
+                        jsonObject.put("public", true);
+                        jsonObject.put("msg", message);
+                    }
+                    out.writeUTF(jsonObject.toJSONString());
                 }
             } catch (IOException e) {
                 e.printStackTrace();
