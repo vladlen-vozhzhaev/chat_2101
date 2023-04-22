@@ -69,7 +69,8 @@ public class User {
         ResultSet resultSet =  statement.executeQuery("SELECT * FROM `users` WHERE login='"+login+"' AND pass='"+pass+"'");
         if(resultSet.next()){
             this.name = resultSet.getString("name");
-            this.getOut().writeUTF("Успешный вход в систему, ваше имя "+this.name);
+            this.id = resultSet.getInt("id");
+            this.getOut().writeUTF("success");
             return true;
         }else{
             this.getOut().writeUTF("Неправильный логин или пароль");

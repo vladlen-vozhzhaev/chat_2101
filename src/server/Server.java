@@ -48,21 +48,55 @@ public class Server {
                                 }
                             }
                             users.add(user);
+                            user.getOut().writeUTF(user.getName()+ " добро пожаловать на сервер");
+                            Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                            Statement statement = connection.createStatement();
+                            ResultSet resultSet = statement.executeQuery("SELECT * FROM `messages`, `users` WHERE from_id = users.id;");
+                            while (resultSet.next()){
+                                String msg = resultSet.getString("msg");
+                                String fromUser = resultSet.getString("name");
+                                int toUser = resultSet.getInt("to_id");
+                                if(user.getId() == toUser)
+                                    user.getOut().writeUTF("Личное сообщение - "+fromUser+": "+msg);
+                                else if (toUser == 0){
+                                    user.getOut().writeUTF(fromUser+": "+msg);
+                                }
+                            }
+                            statement.close();
                             // Общение с клиентами
                             while (true){
                                 jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
                                 boolean publicMsg = (boolean) jsonObject.get("public");
+                                String clientMessage = (String) jsonObject.get("msg");
+                                System.out.println(clientMessage);
                                 if(publicMsg){// Рассылаем всем
-                                    String clientMessage = (String) jsonObject.get("msg");
-                                    System.out.println(clientMessage);
-                                    for (int i = 0; i < users.size(); i++) {
-                                        users.get(i).getOut().writeUTF(clientMessage.toUpperCase()); // Сервер отправляет сообщение
+                                    connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                                    statement = connection.createStatement();
+                                    statement.executeUpdate(
+                                            "INSERT INTO `messages`(`msg`, `from_id`) VALUES ('"+clientMessage+"','"+user.getId()+"')"
+                                    );
+                                    statement.close();
+                                    // user - тот кто отправляет, user1 - тот кому отправляем
+                                    for (User user1 : users) {
+                                        user1.getOut().writeUTF(user.getName()+": "+clientMessage.toUpperCase()); // Сервер отправляет сообщение
                                     }
                                 }else{
-                                    // Отправляем личное сообщение
+                                    // было "2" стало 2
+                                    int toUser = Integer.parseInt(jsonObject.get("id").toString());
+                                    connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+                                    statement = connection.createStatement();
+                                    statement.executeUpdate(
+                                            "INSERT INTO `messages`(`msg`, `from_id`, `to_id`) " +
+                                                "VALUES ('"+clientMessage+"','"+user.getId()+"', '"+toUser+"')"
+                                    );
+                                    statement.close();
+                                    for (User user1 : users) {
+                                        if(user1.getId() == toUser){
+                                            user1.getOut().writeUTF(user.getName()+": "+clientMessage);
+                                            break;
+                                        }
+                                    }
                                 }
-
-
                             }
                         }catch (IOException e){
                             System.out.println("Потеряно соединение с клиентом");
