@@ -73,7 +73,7 @@ public class User {
             this.getOut().writeUTF("success");
             return true;
         }else{
-            this.getOut().writeUTF("Неправильный логин или пароль");
+            this.getOut().writeUTF("error");
             return false;
         }
     }

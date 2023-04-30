@@ -1,6 +1,8 @@
 package client;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -67,10 +69,19 @@ public class Client {
                     @Override
                     public void run() {
                         try {
+                            JSONParser jsonParser = new JSONParser();
                             while (true){
-                                System.out.println(in.readUTF()); // Чтение сообщения с сервера
+                                String response = in.readUTF();
+                                JSONObject jsonObject = (JSONObject) jsonParser.parse(response);
+                                if(jsonObject.get("onlineUsers") != null){
+                                    System.out.println(jsonObject.get("onlineUsers"));
+                                }else{
+                                    System.out.println(response); // Чтение сообщения с сервера
+                                }
                             }
                         } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        } catch (ParseException e) {
                             throw new RuntimeException(e);
                         }
                     }
