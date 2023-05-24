@@ -18,6 +18,8 @@ public class Server {
     private static final String LOGIN_DB = "root";
     private static final String PASS_DB = "";
     private static ArrayList<User> users = new ArrayList<>(); // Список подключенных пользователей
+    private static Connection connection;
+    private static Statement statement;
     public static void main(String[] args) {
         try {
             ServerSocket serverSocket = new ServerSocket(9178);
@@ -51,30 +53,16 @@ public class Server {
                             users.add(user);
                             System.out.println(user.getName()+" подключился");
                             sendOnlineUsers(); // Рассылаем список пользователей которые в сети
+                            jsonObject = new JSONObject();
                             jsonObject.put("msg", user.getName()+ " добро пожаловать на сервер");
                             user.getOut().writeUTF(jsonObject.toJSONString());
-                            // Отправляем сообщения из базы данных (история сообщений)
-                            Connection connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
-                            Statement statement = connection.createStatement();
-                            ResultSet resultSet = statement.executeQuery("SELECT * FROM `messages`, `users` WHERE from_id = users.id;");
-                            while (resultSet.next()){
-                                String msg = resultSet.getString("msg");
-                                String fromUser = resultSet.getString("name");
-                                int toUser = resultSet.getInt("to_id");
-                                int fromId = resultSet.getInt("from_id");
-                                jsonObject.put("msg", fromUser+": "+msg);
-                                if(user.getId() == toUser) { // Отправка приватного (лчиного) сообщения
-                                    jsonObject.put("fromId", fromId);
-                                    user.getOut().writeUTF(jsonObject.toJSONString());
-                                }
-                                else if (toUser == 0){
-                                    user.getOut().writeUTF(jsonObject.toJSONString());
-                                }
-                            }
-                            statement.close();
                             // Общение с клиентами
                             while (true){
                                 jsonObject = (JSONObject) jsonParser.parse(user.getIn().readUTF());
+                                if(jsonObject.get("action") != null && jsonObject.get("action").toString().equals("getHistory")){
+                                    sendHistoryMessage(user);
+                                    continue;
+                                }
                                 boolean publicMsg = (boolean) jsonObject.get("public");
                                 String clientMessage = (String) jsonObject.get("msg");
                                 jsonObject.put("msg", user.getName()+": "+clientMessage);
@@ -145,5 +133,34 @@ public class Server {
         }catch (IOException e){
             e.printStackTrace();
         }
+    }
+    public static void sendHistoryMessage(User user){
+        // Отправляем сообщения из базы данных (история сообщений)
+        try {
+            JSONObject jsonObject = new JSONObject();
+            connection = DriverManager.getConnection(URL_DB, LOGIN_DB, PASS_DB);
+            statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM `messages`, `users` WHERE from_id = users.id;");
+            while (resultSet.next()){
+                String msg = resultSet.getString("msg");
+                String fromUser = resultSet.getString("name");
+                int toUser = resultSet.getInt("to_id");
+                int fromId = resultSet.getInt("from_id");
+                jsonObject.put("msg", fromUser+": "+msg);
+                if(user.getId() == toUser) { // Отправка приватного (лчиного) сообщения
+                    jsonObject.put("fromId", fromId);
+                    user.getOut().writeUTF(jsonObject.toJSONString());
+                }
+                else if (toUser == 0){
+                    user.getOut().writeUTF(jsonObject.toJSONString());
+                }
+            }
+            statement.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 }
